@@ -16,6 +16,9 @@ import math
 def deg_to_rad(y):
     return(y*(math.pi/180))
 
+def rad_to_deg(y):
+    return(y*(180/math.pi))
+
 def run_motors(leftMotor, leftSpeed, rightMotor, rightSpeed):
     leftMotor.run(-leftSpeed)
     rightMotor.run(-rightSpeed)
@@ -75,12 +78,27 @@ wait_for_button()
 stop_watch = StopWatch()
 stop_watch.pause()
 stop_watch.reset()
-stop_watch.resume()
 
 x = 50
 y = 0
 gyro.reset_angle(90)
 theta = gyro.angle()
+
+firstX = x
+firstY = y
+
+slope = 4/3
+intercept = -200/3
+lineTheta = rad_to_deg(math.atan(4/3)) + 90
+print(lineTheta)
+
+while (not (theta - 2 < lineTheta < theta + 2)):
+    run_motors(leftMotor, -150, rightMotor, 150)
+    wait(50)
+    theta = gyro.angle()
+
+stop_motors(leftMotor, rightMotor)
+wait_for_button()
 
 
 # ------------ Following a straight line until it reaches an obstacle ------------
