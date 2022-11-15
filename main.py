@@ -144,9 +144,6 @@ y = 0
 gyro.reset_angle(90)
 theta = gyro.angle()
 
-firstX = x
-firstY = y
-
 slope = 4/3
 intercept = -200/3
 lineTheta = 180 + rad_to_deg(math.atan(-4/3))
@@ -176,7 +173,7 @@ stop_watch.pause()
 stop_watch.reset()
 
 fixedY = y
-k = 3
+k = 1.5
 while (not (204 < x)):
 
     stop_watch.resume()
@@ -203,7 +200,6 @@ wait(1000)
 fixedX = x
 
 while (not (87 < theta < 93)):
-    stop_watch.resume()
     run_motors(leftMotor, 150, rightMotor, -150)
     wait(50)
 
@@ -213,7 +209,7 @@ while (not (87 < theta < 93)):
 stop_motors(leftMotor, rightMotor)
 wait(1000)
 
-while (not (204 < y)):
+while (not (225 < y)):
 
     stop_watch.resume()
 
@@ -222,7 +218,7 @@ while (not (204 < y)):
     ul = k * error + 180
 
     run_motors(leftMotor, ul, rightMotor, ur)
-    wait(50)
+    wait(100)
 
     stop_watch.pause()
     t = stop_watch.time()/1000
@@ -233,7 +229,7 @@ while (not (204 < y)):
     print("x", x)
     print("y", y)
 
-
+stop_motors(leftMotor, rightMotor)
 ev3.speaker.play_file("Mariah.wav")
 
 while (not (195 < x < 205 and 195 < y < 200)):
