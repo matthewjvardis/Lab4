@@ -60,20 +60,29 @@ def update_position(x, y, theta, ur, ul, t, l=14.9, r=3):
     newy = math.sin(alpha)*(x-iccx) + math.cos(alpha)*(y-iccy) + iccy
     return newx, newy
 
-def follow_wall(x, y, theta, lineTheta, slope, intercept, leftMotor, rightMotor, leftBump, rightBump, us, gyro, stop_watch):
+def follow_wall(x, y, theta, leftMotor, rightMotor, leftBump, rightBump, us, gyro, stop_watch, goalX, goalY):
     
     stop_watch.pause()
     stop_watch.reset()
 
-    ideal = 300
+
+    run_motors(leftMotor, -150, rightMotor, 150)
+    wait(2000)
+
+    stop_motors(leftMotor, rightMotor)
+
+    theta = gyro.angle()
+
+    ideal = 200
     k = 0.5
     j = 0
     time_passed = 0
 
-    while((time_passed < 100) or not(slope*x + intercept - 5 < y < slope*x + intercept + 5)):
+    while((time_passed < 100) or not(goalX - 5 < x < goalX + 5 or goalY < y < goalY + 5)):
+
         stop_watch.resume()
 
-    # Edge case: if robot bumps wall, turn robot away from wall and resume
+        # Edge case: if robot bumps wall, turn robot away from wall and resume
         if(leftBump.pressed() or rightBump.pressed()):
             stop_watch.pause()
             stop_watch.reset()
@@ -119,6 +128,13 @@ def follow_wall(x, y, theta, lineTheta, slope, intercept, leftMotor, rightMotor,
         time_passed += 1
         stop_watch.reset()
 
+    stop_motors(leftMotor, rightMotor)
+    wait(200)
+    ev3.speaker.beep()
+    print("x:", x)
+    print("y:", y)
+    return x, y
+
 
 # ------------ Initialization of Motors and Sensors ------------
 
@@ -128,10 +144,12 @@ leftMotor = Motor(port = Port.C, positive_direction = Direction.COUNTERCLOCKWISE
 rightMotor = Motor(port = Port.B, positive_direction = Direction.COUNTERCLOCKWISE)
 
 leftBump = TouchSensor(port = Port.S4)
-rightBump = TouchSensor(port = Port.S2)
+rightBump = TouchSensor(port = Port.S1)
 
-us = UltrasonicSensor(port = Port.S1)
+us = UltrasonicSensor(port = Port.S2)
 gyro = GyroSensor(port = Port.S3)
+
+speed = 250
 
 wait_for_button()
 
@@ -144,26 +162,21 @@ y = 0
 gyro.reset_angle(90)
 theta = gyro.angle()
 
-slope = 4/3
-intercept = -200/3
-lineTheta = 180 + rad_to_deg(math.atan(-4/3))
-#print(lineTheta)
-
 stop_watch.resume()
-run_motors(leftMotor, 180, rightMotor, 180)
-wait(4000)
+run_motors(leftMotor, speed, rightMotor, speed)
+wait(3000)
 stop_motors(leftMotor, rightMotor)
 
 stop_watch.pause()
 t = stop_watch.time()/1000
-x, y = update_position(x, y, theta, 180, 180, t)
+x, y = update_position(x, y, theta, speed, speed, t)
 print("x:", x)
 print("y:", y)
 
 while (not (177 < theta < 183)):
     stop_watch.resume()
     run_motors(leftMotor, -150, rightMotor, 150)
-    wait(50)
+    wait(25)
 
     theta = gyro.angle()
     print(theta)
@@ -172,15 +185,41 @@ stop_motors(leftMotor, rightMotor)
 stop_watch.pause()
 stop_watch.reset()
 
-fixedY = y
-k = 1.5
-while (not (204 < x)):
+goalTheta = theta
+k = 0.75
+
+goalY = y
+
+while (not (207 < x)):
+
+    if (leftBump.pressed() or rightBump.pressed()):
+        stop_motors(leftMotor, rightMotor)
+        x, y = follow_wall(x, y, theta, leftMotor, rightMotor, leftBump, rightBump, us, gyro, stop_watch, 192, goalY)
+        theta = gyro.angle()
+
+        print("x:", x)
+        print("y:", y)
+        print("theta:", theta)
+
+        while (not (177 < theta < 183)):
+            run_motors(leftMotor, -150, rightMotor, 150)
+            wait(25)
+            theta = gyro.angle()
+
+        stop_motors(leftMotor, rightMotor)
+        wait(100)
+        print("x:", x)
+        print("y:", y)
+        print("theta:", theta)
+        stop_watch.pause()
+        stop_watch.reset()
+        continue
 
     stop_watch.resume()
 
-    error = fixedY - y
-    ur = -k * error + 180
-    ul = k * error + 180
+    error = theta - 180
+    ur = -k * error + speed
+    ul = k * error + speed
 
     run_motors(leftMotor, ul, rightMotor, ur)
     wait(50)
@@ -191,8 +230,9 @@ while (not (204 < x)):
 
     theta = gyro.angle()
     x, y = update_position(x, y, theta, ur, ul, t)
-    print("x", x)
-    print("y", y)
+    print("x:", x)
+    print("y:", y)
+    print("theta:", theta)
 
 stop_motors(leftMotor, rightMotor)
 wait(1000)
@@ -201,21 +241,47 @@ fixedX = x
 
 while (not (87 < theta < 93)):
     run_motors(leftMotor, 150, rightMotor, -150)
-    wait(50)
+    wait(25)
 
     theta = gyro.angle()
     print(theta)
 
 stop_motors(leftMotor, rightMotor)
 wait(1000)
+goalTheta = theta
 
-while (not (225 < y)):
+goalX = 200
+
+while (not (230 < y)):
+    
+    if (leftBump.pressed() or rightBump.pressed()):
+        stop_motors(leftMotor, rightMotor)
+        x, y = follow_wall(x, y, theta, leftMotor, rightMotor, leftBump, rightBump, us, gyro, stop_watch, goalX, 0)
+        theta = gyro.angle()
+
+        print("x:", x)
+        print("y:", y)
+        print("theta:", theta)
+
+        while (not (87 < theta < 93)):
+            run_motors(leftMotor, -150, rightMotor, 150)
+            wait(25)
+            theta = gyro.angle()
+
+        stop_motors(leftMotor, rightMotor)
+        wait(100)
+        print("x:", x)
+        print("y:", y)
+        print("theta:", theta)
+        stop_watch.pause()
+        stop_watch.reset()
+        continue
 
     stop_watch.resume()
 
-    error = x - fixedX
-    ur = -k * error + 180
-    ul = k * error + 180
+    error = theta - 90
+    ur = -k * error + speed
+    ul = k * error + speed
 
     run_motors(leftMotor, ul, rightMotor, ur)
     wait(100)
@@ -229,39 +295,8 @@ while (not (225 < y)):
     print("x", x)
     print("y", y)
 
-stop_motors(leftMotor, rightMotor)
-ev3.speaker.play_file("Mariah.wav")
-
-while (not (195 < x < 205 and 195 < y < 200)):
-    stop_watch.resume()
-    if (leftBump.pressed() or rightBump.pressed()):
-        stop_watch.pause()
-        stop_watch.reset()
-        stop_motors(leftMotor, rightMotor)
-        wait(1000)
-
-        stop_watch.resume()
-        run_motors(leftMotor, -150, rightMotor, -150)
-        wait(2000)
-        stop_motors(leftMotor, rightMotor)
-        stop_watch.pause()
-        t = stop_watch.time()/1000
-        x, y = update_position(x, y, theta, -150, -150, t)
-        stop_watch.reset()
-        wait(1000)
-        follow_wall(x, y, theta, lineTheta, slope, intercept, leftMotor, rightMotor, leftBump, rightBump, us, gyro, stop_watch)
-    else:
-        stop_watch.resume()
-        run_motors(leftMotor, 150, rightMotor, 150)
-        wait(50)
-        stop_watch.pause()
-        t = stop_watch.time()/1000
-        stop_watch.reset()
-        x, y = update_position(x, y, theta, 150, 150, t)
-        print("x:", x)
-        print("y:", y)
-        print("theta:", )
+stop_watch.pause()
+stop_watch.reset()
 
 stop_motors(leftMotor, rightMotor)
-
 ev3.speaker.play_file("Mariah.wav")
